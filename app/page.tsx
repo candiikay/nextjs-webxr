@@ -5,20 +5,47 @@
 // Import required components
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
+import { XR, createXRStore } from '@react-three/xr';
 import { Model as PottedPlant } from './components/PottedPlant';
 import { Cube } from './components/Cube';
+import { Suspense, useState } from 'react';
+
+// Create XR store for managing VR/AR sessions
+// This is the new v6 API approach - much cleaner than the old button components
+const xrStore = createXRStore();
 
 // Main homepage component that renders our 3D scene
 export default function Home() {
+  // State for tracking XR session status (useful for UI feedback)
+  const [isInXR, setIsInXR] = useState(false);
+
   return (
     // Container div that takes up the full viewport (100% width and height)
     <div style={{ width: '100vw', height: '100vh' }}>
+      {/* 
+        XR Button Container - Removed per user request
+        XR functionality is still available through the store (xrStore.enterVR(), xrStore.enterAR())
+        but the UI buttons have been removed for a cleaner interface
+      */}
+      
       {/* 
         Canvas is the main React Three Fiber component that creates a 3D scene
         It sets up WebGL context and handles rendering
         camera prop sets the initial camera position [x, y, z]
       */}
       <Canvas camera={{ position: [5, 5, 5] }}>
+        {/* 
+          Suspense boundary ensures XR components load properly
+          This prevents hydration issues with WebXR APIs
+        */}
+        <Suspense fallback={null}>
+          {/* 
+            XR Provider - New v6 API
+            This component enables WebXR functionality throughout the scene
+            It manages XR sessions and provides context to child components
+            The store prop connects our XR store to the scene
+          */}
+          <XR store={xrStore}>
         
         {/* 
           LIGHTING SETUP
@@ -82,17 +109,29 @@ export default function Home() {
         />
         
         {/* 
+          XR INTERACTION
+          Note: In newer versions of @react-three/xr, controllers and hands 
+          are automatically handled by the XR provider - no manual setup needed!
+          The library automatically detects and renders VR controllers and hand tracking.
+        */}
+        
+        {/* 
           CAMERA CONTROLS
           OrbitControls allows users to navigate around the 3D scene
           - Left click + drag: Rotate camera around the scene
           - Right click + drag: Pan the camera
           - Scroll wheel: Zoom in and out
+          Note: These controls are disabled in VR/AR mode automatically
         */}
         <OrbitControls 
           enablePan={true}      // Allow panning (moving the camera)
           enableZoom={true}     // Allow zooming in/out
           enableRotate={true}   // Allow rotating around the scene
         />
+        
+          {/* Close the XR provider */}
+          </XR>
+        </Suspense>
       </Canvas>
     </div>
   );
