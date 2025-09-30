@@ -146,7 +146,7 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
   // Sneaker dragging state
   const [isDraggingSneaker, setIsDraggingSneaker] = useState(false);
   const [sneakerDragOffset, setSneakerDragOffset] = useState({ x: 0, y: 0, z: 0 });
-
+  
   // Rigid movement limits so the sneaker always stays in view
   const movementLimits = useMemo(() => ({
     maxX: 2.5,
@@ -164,21 +164,10 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
   // State for GLTF loading errors
   const [gltfError, setGltfError] = useState<Error | null>(null);
   
-  // Handle GLTF loading errors and loading indicator
+  // Handle GLTF loading errors
   React.useEffect(() => {
     if (sneakerScene) {
       setGltfError(null);
-      // Hide loading indicator when scene is loaded
-      const loadingIndicator = document.getElementById('loading-indicator');
-      if (loadingIndicator) {
-        loadingIndicator.style.opacity = '0';
-      }
-    } else {
-      // Show loading indicator when scene is not loaded
-      const loadingIndicator = document.getElementById('loading-indicator');
-      if (loadingIndicator) {
-        loadingIndicator.style.opacity = '1';
-      }
     }
   }, [sneakerScene]);
   

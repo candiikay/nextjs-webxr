@@ -341,25 +341,7 @@ export default function Home() {
         </Suspense>
       </Canvas>
       
-      {/* Loading indicator - OUTSIDE Canvas */}
-      <div 
-        id="loading-indicator"
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          color: '#ff69b4',
-          fontSize: '18px',
-          fontFamily: 'Inter, ui-sans-serif, system-ui',
-          zIndex: 10,
-          pointerEvents: 'none',
-          opacity: 0,
-          transition: 'opacity 0.3s ease'
-        }}
-      >
-        Loading 3D Scene...
-      </div>
+      {/* Loading indicator temporarily removed to debug R3F error */}
 
       {/* Fixed right-side color picker panel - OUTSIDE Canvas */}
       {customizerOpen && selectedPartForColor && (
