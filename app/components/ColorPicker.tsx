@@ -5,13 +5,13 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 interface ColorPickerProps {
   isOpen: boolean;
-  onClose: () => void;
   selectedPart: string | null;
   onColorChange: (color: string) => void;
+  onApplyColor: (color: string) => void;
   currentColor?: string;
 }
 
-export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, currentColor = '#ff69b4' }: ColorPickerProps) {
+export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor, currentColor = '#ff69b4' }: ColorPickerProps) {
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(100);
   const [lightness, setLightness] = useState(50);
@@ -374,9 +374,12 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
         </div>
       </div>
 
-      {/* Close Button */}
+      {/* Apply Color Button */}
       <button
-        onClick={onClose}
+        onClick={() => {
+          const hexColor = hslToHex(hue, saturation, lightness);
+          onApplyColor(hexColor);
+        }}
         style={{
           width: '100%',
           padding: '8px 12px',

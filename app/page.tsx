@@ -100,17 +100,20 @@ export default function Home() {
       ...prev,
       partColors: { ...prev.partColors, [part]: color }
     }));
+  }, []);
+
+  // Apply color and close picker function
+  const applyColorAndClose = useCallback((part: string, color: string) => {
+    setOptions(prev => ({
+      ...prev,
+      partColors: { ...prev.partColors, [part]: color }
+    }));
     setCustomizerOpen(false);
     setSelectedPartForColor(null);
     setClickedPart(null);
   }, []);
 
-  // Close color picker function - memoized to prevent re-renders
-  const closeColorPicker = useCallback(() => {
-    setCustomizerOpen(false);
-    setSelectedPartForColor(null);
-    setClickedPart(null);
-  }, []);
+  // Color picker is now closed via applyColorAndClose function
 
   // Color change handler - memoized to prevent re-renders
   const handleColorChange = useCallback((color: string) => {
@@ -337,9 +340,9 @@ export default function Home() {
         <ColorPicker
           key={`color-picker-${selectedPartForColor}`}
           isOpen={customizerOpen}
-          onClose={closeColorPicker}
           selectedPart={selectedPartForColor}
           onColorChange={handleColorChange}
+          onApplyColor={(color) => applyColorAndClose(selectedPartForColor, color)}
           currentColor={options.partColors[selectedPartForColor] || '#ff69b4'}
         />
       )}
