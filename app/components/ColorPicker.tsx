@@ -138,6 +138,15 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
     updateSLFromMouse(e);
   }, [updateSLFromMouse]);
 
+  // Handle mouse up - memoized outside useEffect
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragType(null);
+    // Update color when dragging stops
+    const hexColor = hslToHex(hue, saturation, lightness);
+    onColorChange(hexColor);
+  }, [hue, saturation, lightness, onColorChange]);
+
   // Global mouse events
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -150,14 +159,6 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       }
     };
 
-    const handleMouseUp = useCallback(() => {
-      setIsDragging(false);
-      setDragType(null);
-      // Update color when dragging stops
-      const hexColor = hslToHex(hue, saturation, lightness);
-      onColorChange(hexColor);
-    }, [hue, saturation, lightness, onColorChange]);
-
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -167,7 +168,7 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragType, updateHueFromMouse, updateSLFromMouse]);
+  }, [isDragging, dragType, updateHueFromMouse, updateSLFromMouse, handleMouseUp]);
 
   if (!isOpen || !selectedPart) return null;
 
