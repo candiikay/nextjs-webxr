@@ -37,32 +37,32 @@ export function BossChatEngine({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messageUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Conversation flow states
+  // Conversation flow states - more natural workplace conversation
   const conversationFlow = {
     initial: {
-      bossMessage: "Hey! 👋 Are you ready for your challenge?",
-      responses: ["Yes, I'm ready!", "Not yet, give me a moment", "What kind of challenge?"]
+      bossMessage: "Hey, do you have a minute?",
+      responses: ["Yes, of course", "My schedule is busy but yes", "What's up?"]
     },
     ready: {
-      bossMessage: "Great! This design is really terrible. 😤 We need to fix it before the client sees it. Are you ready to start?",
-      responses: ["Let's do this!", "I'm nervous but ready", "What's the time limit?"]
+      bossMessage: "Great! So I need you to take a look at this sneaker design. The client is coming in 2 minutes and it's... well, it needs work. Can you fix it up real quick?",
+      responses: ["Sure thing, boss", "I'll do my best", "How much time do I have?"]
     },
     countdown: {
-      bossMessage: "Perfect! Starting in 3... 2... 1... GO! 🚀",
+      bossMessage: "Perfect! Alright, let's go - 3... 2... 1... start!",
       responses: []
     }
   };
 
-  // Boss criticism messages during the challenge
+  // Boss criticism messages during the challenge - more natural workplace pressure
   const bossCriticisms = [
-    "This is taking too long! 😤 The client is waiting!",
-    "Come on, focus! 🎯 We need results, not perfection!",
-    "Time is running out! ⏰ Pick up the pace!",
-    "That color choice is questionable... 🤔 Try something else!",
-    "The client won't like this! 😡 Think about their taste!",
-    "We're running out of time! ⚡ Make it count!",
-    "This better be good! 😤 Our reputation is on the line!",
-    "Hurry up! 🏃‍♂️ The meeting starts soon!"
+    "How's it looking? The client will be here any minute...",
+    "We're running out of time here. How much longer?",
+    "That color might not work for them. What else you got?",
+    "Come on, we need to wrap this up soon.",
+    "The client's in the lobby. How close are we?",
+    "This needs to be good. They're a big account.",
+    "We're cutting it close. Almost done?",
+    "They're going to see this in like 30 seconds..."
   ];
 
   // Auto-scroll to bottom when new messages arrive
@@ -113,32 +113,20 @@ export function BossChatEngine({
     
     // Process response based on conversation state
     if (conversationState === 'initial') {
-      if (response.includes("ready") || response.includes("Yes")) {
-        setConversationState('ready');
-        setTimeout(() => {
-          addBossMessage(conversationFlow.ready.bossMessage, conversationFlow.ready.responses);
-        }, 1000);
-      } else if (response.includes("moment")) {
-        setTimeout(() => {
-          addBossMessage("Take your time, but not too much! 😅 Let me know when you're ready.", ["I'm ready now!", "Just a bit more time"]);
-        }, 1000);
-      } else if (response.includes("challenge")) {
-        setTimeout(() => {
-          addBossMessage("I need you to redesign these terrible sneakers! 😤 It's a time-pressured design challenge. Ready?", ["Yes, let's do it!", "I'm nervous but ready"]);
-        }, 1000);
-      }
+      // All responses lead to the same outcome - boss needs you
+      setConversationState('ready');
+      setTimeout(() => {
+        addBossMessage(conversationFlow.ready.bossMessage, conversationFlow.ready.responses);
+      }, 1000);
     } else if (conversationState === 'ready') {
-      if (response.includes("Let's do this") || response.includes("ready")) {
+      // All responses lead to starting the work
+      if (response.includes("time")) {
+        setTimeout(() => {
+          addBossMessage("About 2 minutes. They're literally walking in the door. Ready?", ["Let's do it", "I'll make it work"]);
+        }, 1000);
+      } else {
         setConversationState('countdown');
         startCountdown();
-      } else if (response.includes("nervous")) {
-        setTimeout(() => {
-          addBossMessage("Don't worry! 😊 I'll guide you through it. Just do your best!", ["I'm ready!", "Let's start!"]);
-        }, 1000);
-      } else if (response.includes("time limit")) {
-        setTimeout(() => {
-          addBossMessage("You'll have 2 minutes! ⏰ Ready to start the countdown?", ["Yes, let's go!", "2 minutes? That's intense!"]);
-        }, 1000);
       }
     }
   }, [conversationState, addBossMessage, addUserMessage]);
@@ -146,7 +134,7 @@ export function BossChatEngine({
   // Start countdown sequence
   const startCountdown = useCallback(() => {
     setCountdown(3);
-    addBossMessage("Perfect! Starting in 3... 2... 1... GO! 🚀");
+    addBossMessage("Perfect! Alright, let's go - 3... 2... 1... start!");
     
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
@@ -165,7 +153,7 @@ export function BossChatEngine({
   const startChallenge = useCallback(() => {
     setIsGameActive(true);
     setTimeLeft(120); // 2 minutes
-    onChallengeStart(120, "Redesign these terrible sneakers!");
+    onChallengeStart(120, "Fix up this sneaker design for the client!");
     
     // Start 30-second message updates
     startMessageUpdates();
@@ -191,7 +179,7 @@ export function BossChatEngine({
     }
     
     // Boss is disappointed
-    addBossMessage("Time&apos;s up! 😤 You FAILED! The client is NOT happy with this mess!");
+    addBossMessage("Time's up. The client is here. We'll have to show them what we have...");
     
     // Calculate score (0 for failure)
     setScore(0);
@@ -234,11 +222,11 @@ export function BossChatEngine({
     
     // Boss reaction based on score
     if (newScore >= 100) {
-      addBossMessage("WOW! 🤩 That's AMAZING! The client is going to LOVE this! You're a genius!");
+      addBossMessage("Wow, that looks great! The client is going to love this. Nice work!");
     } else if (newScore >= 50) {
-      addBossMessage("Not bad! 👍 The client might actually like this. Good work!");
+      addBossMessage("Not bad! This should work for the presentation. Good job!");
     } else {
-      addBossMessage("Hmm... 🤔 It's okay, I guess. The client might not hate it.");
+      addBossMessage("It's... okay. We'll see what the client thinks. Thanks for trying.");
     }
     
     onChallengeComplete(newScore);
@@ -485,7 +473,7 @@ export function BossChatEngine({
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            💬 Start Conversation
+            💬 Start Chat
           </button>
         )}
         
@@ -513,7 +501,7 @@ export function BossChatEngine({
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            ✅ I&apos;m Done!
+            ✅ Done!
           </button>
         )}
         
