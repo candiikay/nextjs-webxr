@@ -130,12 +130,16 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
   // Handle mouse events for color wheel
   const handleColorWheelMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     setDragType('hue');
     updateHueFromMouse(e);
   }, [updateHueFromMouse]);
 
   const handleSLPickerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     setDragType('sl');
     updateSLFromMouse(e);
@@ -179,6 +183,10 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
   return (
     <div
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseMove={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         right: 24,
@@ -223,6 +231,10 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       <div style={{ marginBottom: 16, textAlign: 'center' }}>
         <div
           ref={colorWheelRef}
+          onMouseDown={handleColorWheelMouseDown}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           style={{
             width: 140,
             height: 140,
@@ -242,7 +254,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
             border: '2px solid rgba(255,255,255,0.2)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
           }}
-          onMouseDown={handleColorWheelMouseDown}
         >
           {/* Hue indicator */}
           <div
@@ -267,6 +278,10 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       <div style={{ marginBottom: 16, textAlign: 'center' }}>
         <div
           ref={slPickerRef}
+          onMouseDown={handleSLPickerMouseDown}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
           style={{
             width: 140,
             height: 140,
@@ -278,7 +293,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
             borderRadius: 8,
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
           }}
-          onMouseDown={handleSLPickerMouseDown}
         >
           {/* Saturation/Lightness indicator */}
           <div
@@ -376,10 +390,14 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
       {/* Apply Color Button */}
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
           const hexColor = hslToHex(hue, saturation, lightness);
           onApplyColor(hexColor);
         }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseUp={(e) => e.stopPropagation()}
         style={{
           width: '100%',
           padding: '8px 12px',
