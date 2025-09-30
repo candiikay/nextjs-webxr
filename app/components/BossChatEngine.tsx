@@ -180,7 +180,7 @@ export function BossChatEngine({
   return (
     <div style={{
       position: 'fixed',
-      top: 20,
+      bottom: 20,
       left: 20,
       width: 350,
       maxHeight: '80vh',
