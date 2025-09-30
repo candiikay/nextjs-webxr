@@ -8,7 +8,7 @@ import { OrbitControls, Environment, ContactShadows, PerspectiveCamera } from '@
 import { XR, createXRStore } from '@react-three/xr';
 import { FastSneakerCustomizer } from './components/FastSneakerCustomizer';
 import { ColorPicker } from './components/ColorPicker';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useCallback } from 'react';
 import * as THREE from 'three';
 
 // Create XR store for managing VR/AR sessions
@@ -94,8 +94,8 @@ export default function Home() {
   
   // Color picker now uses a modern color wheel interface
   
-  // Update part color function
-  const updatePartColor = (part: string, color: string) => {
+  // Update part color function - memoized to prevent re-renders
+  const updatePartColor = useCallback((part: string, color: string) => {
     setOptions(prev => ({
       ...prev,
       partColors: { ...prev.partColors, [part]: color }
@@ -103,7 +103,21 @@ export default function Home() {
     setCustomizerOpen(false);
     setSelectedPartForColor(null);
     setClickedPart(null);
-  };
+  }, []);
+
+  // Close color picker function - memoized to prevent re-renders
+  const closeColorPicker = useCallback(() => {
+    setCustomizerOpen(false);
+    setSelectedPartForColor(null);
+    setClickedPart(null);
+  }, []);
+
+  // Color change handler - memoized to prevent re-renders
+  const handleColorChange = useCallback((color: string) => {
+    if (selectedPartForColor) {
+      updatePartColor(selectedPartForColor, color);
+    }
+  }, [selectedPartForColor, updatePartColor]);
 
   return (
     // Container div that takes up the full viewport (100% width and height)
@@ -321,17 +335,9 @@ export default function Home() {
       {/* Modern Color Picker - OUTSIDE Canvas */}
       <ColorPicker
         isOpen={customizerOpen}
-        onClose={() => {
-          setCustomizerOpen(false);
-          setSelectedPartForColor(null);
-          setClickedPart(null);
-        }}
+        onClose={closeColorPicker}
         selectedPart={selectedPartForColor}
-        onColorChange={(color) => {
-          if (selectedPartForColor) {
-            updatePartColor(selectedPartForColor, color);
-          }
-        }}
+        onColorChange={handleColorChange}
         currentColor={selectedPartForColor ? options.partColors[selectedPartForColor] : '#ff69b4'}
       />
     </div>

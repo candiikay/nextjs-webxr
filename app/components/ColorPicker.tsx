@@ -89,11 +89,13 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
     }
   }, [currentColor]);
 
-  // Update color when HSL values change
+  // Update color when HSL values change - but only when not dragging to prevent flashing
   useEffect(() => {
-    const hexColor = hslToHex(hue, saturation, lightness);
-    onColorChange(hexColor);
-  }, [hue, saturation, lightness, onColorChange]);
+    if (!isDragging) {
+      const hexColor = hslToHex(hue, saturation, lightness);
+      onColorChange(hexColor);
+    }
+  }, [hue, saturation, lightness, onColorChange, isDragging]);
 
   const updateHueFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
     if (!colorWheelRef.current) return;
@@ -148,10 +150,13 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = useCallback(() => {
       setIsDragging(false);
       setDragType(null);
-    };
+      // Update color when dragging stops
+      const hexColor = hslToHex(hue, saturation, lightness);
+      onColorChange(hexColor);
+    }, [hue, saturation, lightness, onColorChange]);
 
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
