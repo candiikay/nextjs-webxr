@@ -1,5 +1,5 @@
-// Modern Color Picker Component
-// Features a color wheel/droplet interface for intuitive color selection
+// Simple Color Picker Component
+// Just a color wheel - compact and easy to use
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
@@ -13,22 +13,14 @@ interface ColorPickerProps {
 
 export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor, currentColor = '#ff69b4' }: ColorPickerProps) {
   const [hue, setHue] = useState(0);
-  const [saturation, setSaturation] = useState(100);
-  const [lightness, setLightness] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragType, setDragType] = useState<'hue' | 'sl' | null>(null);
-  
   const colorWheelRef = useRef<HTMLDivElement>(null);
-  const slPickerRef = useRef<HTMLDivElement>(null);
 
-  // Debug logging to see if component is re-mounting
-  console.log('🎨 ColorPicker render:', { isOpen, selectedPart, currentColor });
-
-  // Convert HSL to hex
-  const hslToHex = (h: number, s: number, l: number): string => {
+  // Convert HSL to hex (simplified - just hue, fixed saturation and lightness)
+  const hslToHex = (h: number): string => {
     const hNorm = h / 360;
-    const sNorm = s / 100;
-    const lNorm = l / 100;
+    const sNorm = 0.8; // Fixed saturation
+    const lNorm = 0.5; // Fixed lightness
 
     const hue2rgb = (p: number, q: number, t: number) => {
       if (t < 0) t += 1;
@@ -53,7 +45,7 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
 
-  // Convert hex to HSL
+  // Convert hex to HSL (simplified)
   const hexToHsl = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16) / 255;
     const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -61,12 +53,10 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h = 0, s = 0;
-    const l = (max + min) / 2;
+    let h = 0;
 
     if (max !== min) {
       const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       switch (max) {
         case r: h = (g - b) / d + (g < b ? 6 : 0); break;
         case g: h = (b - r) / d + 2; break;
@@ -75,25 +65,16 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       h /= 6;
     }
 
-    return {
-      h: Math.round(h * 360),
-      s: Math.round(s * 100),
-      l: Math.round(l * 100)
-    };
+    return Math.round(h * 360);
   };
 
   // Initialize from current color
   useEffect(() => {
     if (currentColor) {
-      const hsl = hexToHsl(currentColor);
-      setHue(hsl.h);
-      setSaturation(hsl.s);
-      setLightness(hsl.l);
+      const hueValue = hexToHsl(currentColor);
+      setHue(hueValue);
     }
   }, [currentColor]);
-
-  // Don't call onColorChange in useEffect to prevent infinite loops
-  // Color changes will be handled by mouse drag events only
 
   const updateHueFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
     if (!colorWheelRef.current) return;
@@ -109,62 +90,27 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
     setHue(normalizedAngle);
     
     // Update color immediately when dragging
-    const newSaturation = saturation;
-    const newLightness = lightness;
-    const hexColor = hslToHex(normalizedAngle, newSaturation, newLightness);
+    const hexColor = hslToHex(normalizedAngle);
     onColorChange(hexColor);
-  }, [saturation, lightness, onColorChange]);
-
-  const updateSLFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
-    if (!slPickerRef.current) return;
-    
-    const rect = slPickerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-    
-    const newSaturation = Math.round((x / rect.width) * 100);
-    const newLightness = Math.round(100 - (y / rect.height) * 100);
-    
-    setSaturation(newSaturation);
-    setLightness(newLightness);
-    
-    // Update color immediately when dragging
-    const hexColor = hslToHex(hue, newSaturation, newLightness);
-    onColorChange(hexColor);
-  }, [hue, onColorChange]);
+  }, [onColorChange]);
 
   // Handle mouse events for color wheel
   const handleColorWheelMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDragging(true);
-    setDragType('hue');
     updateHueFromMouse(e);
   }, [updateHueFromMouse]);
 
-  const handleSLPickerMouseDown = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDragging(true);
-    setDragType('sl');
-    updateSLFromMouse(e);
-  }, [updateSLFromMouse]);
-
-  // Handle mouse up - memoized outside useEffect
+  // Handle mouse up
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    setDragType(null);
-    // Color is already updated during dragging, no need to update again
   }, []);
 
   // Global mouse events
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      
-      if (dragType === 'hue') {
-        updateHueFromMouse(e);
-      } else if (dragType === 'sl') {
-        updateSLFromMouse(e);
-      }
+      updateHueFromMouse(e);
     };
 
     if (isDragging) {
@@ -176,11 +122,11 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, dragType, updateHueFromMouse, updateSLFromMouse, handleMouseUp]);
+  }, [isDragging, updateHueFromMouse, handleMouseUp]);
 
   if (!isOpen || !selectedPart) return null;
 
-  const currentHex = hslToHex(hue, saturation, lightness);
+  const currentHex = hslToHex(hue);
 
   return (
     <div
@@ -190,13 +136,13 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
         right: 24,
         top: '50%',
         transform: 'translateY(-50%)',
-        width: 280,
+        width: 200,
         background: 'linear-gradient(145deg, #1a1a1a, #0f0f0f)',
         border: '1px solid rgba(255,105,180,0.3)',
         borderRadius: 16,
         boxShadow: '0 8px 32px rgba(255,105,180,0.25)',
         color: '#f8f8ff',
-        padding: 16,
+        padding: 20,
         fontFamily: 'Inter, ui-sans-serif, system-ui',
         zIndex: 9999,
         backdropFilter: 'blur(10px)',
@@ -204,7 +150,7 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
         <div style={{ 
           fontWeight: 600, 
           marginBottom: 4, 
@@ -213,11 +159,11 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
           textTransform: 'uppercase',
           letterSpacing: '0.5px'
         }}>
-          Customize Color
+          Choose Color
         </div>
         <div style={{ 
           fontWeight: 700, 
-          fontSize: 20,
+          fontSize: 16,
           color: '#ff69b4',
           textTransform: 'capitalize'
         }}>
@@ -232,8 +178,8 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
           onMouseDown={handleColorWheelMouseDown}
           onClick={(e) => e.stopPropagation()}
           style={{
-            width: 140,
-            height: 140,
+            width: 120,
+            height: 120,
             margin: '0 auto',
             borderRadius: '50%',
             background: `conic-gradient(
@@ -247,8 +193,8 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
             )`,
             position: 'relative',
             cursor: 'crosshair',
-            border: '2px solid rgba(255,255,255,0.2)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            border: '3px solid rgba(255,255,255,0.3)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
           }}
         >
           {/* Hue indicator */}
@@ -257,51 +203,14 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
               position: 'absolute',
               top: '50%',
               left: '50%',
-              width: 16,
-              height: 16,
+              width: 18,
+              height: 18,
               borderRadius: '50%',
               background: '#fff',
-              border: '2px solid #000',
-              transform: `translate(-50%, -50%) rotate(${hue}deg) translateY(-60px)`,
+              border: '3px solid #000',
+              transform: `translate(-50%, -50%) rotate(${hue}deg) translateY(-50px)`,
               pointerEvents: 'none',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Saturation/Lightness Picker */}
-      <div style={{ marginBottom: 16, textAlign: 'center' }}>
-        <div
-          ref={slPickerRef}
-          onMouseDown={handleSLPickerMouseDown}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            width: 140,
-            height: 140,
-            margin: '0 auto',
-            background: `hsl(${hue}, 100%, 50%)`,
-            position: 'relative',
-            cursor: 'crosshair',
-            border: '2px solid rgba(255,255,255,0.2)',
-            borderRadius: 8,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-          }}
-        >
-          {/* Saturation/Lightness indicator */}
-          <div
-            style={{
-              position: 'absolute',
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              background: '#fff',
-              border: '2px solid #000',
-              transform: `translate(-50%, -50%)`,
-              left: `${saturation}%`,
-              top: `${100 - lightness}%`,
-              pointerEvents: 'none',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
             }}
           />
         </div>
@@ -311,73 +220,31 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         marginBottom: 16,
-        padding: '8px 12px',
+        padding: '12px',
         background: 'rgba(255,255,255,0.05)',
-        borderRadius: 8,
+        borderRadius: 12,
         border: '1px solid rgba(255,255,255,0.1)'
       }}>
-        <div style={{ fontSize: 12, fontWeight: 500 }}>
-          Color:
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 6,
+              width: 32,
+              height: 32,
+              borderRadius: 8,
               background: currentHex,
-              border: '2px solid rgba(255,255,255,0.2)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              border: '2px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
             }}
           />
           <div style={{ 
             fontFamily: 'monospace', 
-            fontSize: 12, 
+            fontSize: 14, 
             fontWeight: 600,
             color: '#ff69b4'
           }}>
             {currentHex.toUpperCase()}
-          </div>
-        </div>
-      </div>
-
-      {/* HSL Values */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr 1fr', 
-        gap: 8, 
-        marginBottom: 16 
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>HUE</div>
-          <div style={{ 
-            fontSize: 12, 
-            fontWeight: 600,
-            color: '#fff'
-          }}>
-            {Math.round(hue)}°
-          </div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>SAT</div>
-          <div style={{ 
-            fontSize: 12, 
-            fontWeight: 600,
-            color: '#fff'
-          }}>
-            {Math.round(saturation)}%
-          </div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>LIGHT</div>
-          <div style={{ 
-            fontSize: 12, 
-            fontWeight: 600,
-            color: '#fff'
-          }}>
-            {Math.round(lightness)}%
           </div>
         </div>
       </div>
@@ -387,17 +254,16 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const hexColor = hslToHex(hue, saturation, lightness);
-          onApplyColor(hexColor);
+          onApplyColor(currentHex);
         }}
         style={{
           width: '100%',
-          padding: '8px 12px',
+          padding: '12px 16px',
           background: 'linear-gradient(135deg, #ff69b4, #ffc0cb)',
           color: '#0f0f0f',
           border: 'none',
-          borderRadius: 8,
-          fontSize: 12,
+          borderRadius: 12,
+          fontSize: 14,
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'all 0.3s ease',
