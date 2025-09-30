@@ -92,13 +92,8 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
     }
   }, [currentColor]);
 
-  // Update color when HSL values change - but only when not dragging to prevent flashing
-  useEffect(() => {
-    if (!isDragging) {
-      const hexColor = hslToHex(hue, saturation, lightness);
-      onColorChange(hexColor);
-    }
-  }, [hue, saturation, lightness, isDragging]); // Removed onColorChange from dependencies
+  // Don't call onColorChange in useEffect to prevent infinite loops
+  // Color changes will be handled by mouse drag events only
 
   const updateHueFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
     if (!colorWheelRef.current) return;
@@ -112,7 +107,13 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
     const normalizedAngle = (angle + 360) % 360;
     
     setHue(normalizedAngle);
-  }, []);
+    
+    // Update color immediately when dragging
+    const newSaturation = saturation;
+    const newLightness = lightness;
+    const hexColor = hslToHex(normalizedAngle, newSaturation, newLightness);
+    onColorChange(hexColor);
+  }, [saturation, lightness, onColorChange]);
 
   const updateSLFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
     if (!slPickerRef.current) return;
@@ -121,12 +122,16 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
     const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
     
-    const saturation = Math.round((x / rect.width) * 100);
-    const lightness = Math.round(100 - (y / rect.height) * 100);
+    const newSaturation = Math.round((x / rect.width) * 100);
+    const newLightness = Math.round(100 - (y / rect.height) * 100);
     
-    setSaturation(saturation);
-    setLightness(lightness);
-  }, []);
+    setSaturation(newSaturation);
+    setLightness(newLightness);
+    
+    // Update color immediately when dragging
+    const hexColor = hslToHex(hue, newSaturation, newLightness);
+    onColorChange(hexColor);
+  }, [hue, onColorChange]);
 
   // Handle mouse events for color wheel
   const handleColorWheelMouseDown = useCallback((e: React.MouseEvent) => {
@@ -147,10 +152,8 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setDragType(null);
-    // Update color when dragging stops
-    const hexColor = hslToHex(hue, saturation, lightness);
-    onColorChange(hexColor);
-  }, [hue, saturation, lightness, onColorChange]);
+    // Color is already updated during dragging, no need to update again
+  }, []);
 
   // Global mouse events
   useEffect(() => {
