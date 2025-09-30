@@ -1,0 +1,524 @@
+# Next.js WebXR Sneaker Customizer - Project Rules
+
+## 🎯 Project Overview
+This is a Next.js React Three Fiber WebXR project for building a VR sneaker customization experience. The goal is to create an immersive, performant VR application where users can customize sneakers in 360 degrees.
+
+## 📋 Core Development Rules
+
+### 1. **Performance First - VR Optimization**
+- Always target 90fps for VR performance
+- Use `useMemo` and `useCallback` for expensive operations
+                              - Minimize draw calls and geometry complexity
+                              - Avoid unnecessary re-renders in 3D components
+- Use `Suspense` boundaries for 3D model loading
+- Keep animations smooth and comfortable for VR
+
+### 2. **File Management**
+- NEVER create new files unless absolutely necessary
+- Fix existing files instead of creating new ones
+- Keep code clean and maintainable
+- Delete unused components and files immediately
+- Use absolute paths when possible for imports
+
+### 3. **React Three Fiber Best Practices - CRITICAL RULES**
+
+#### 3.1 **Canvas Content Rules - NEVER VIOLATE**
+- **ONLY Three.js objects inside `<Canvas>`**: Never put HTML elements (`<div>`, `<button>`, `<input>`, etc.) inside Canvas
+- **HTML overlays go OUTSIDE Canvas**: Use `position: fixed` for UI elements that appear over the 3D scene
+- **Use `<Html>` from drei for 3D-anchored HTML**: Only when you need HTML positioned in 3D space
+- **Canvas structure**: `<Canvas><Suspense><XR><Your3DComponents></XR></Suspense></Canvas>`
+
+#### 3.2 **Component Architecture Rules**
+- **Separate 3D and HTML components**: Keep 3D logic in Canvas, HTML UI outside
+- **State management**: Pass state between 3D and HTML components via props
+- **Event handling**: Use R3F pointer events (`onPointerOver`, `onClick`) for 3D objects
+- **Never mix HTML and 3D in same component**: Create separate components for each
+
+#### 3.3 **Model Loading and Performance**
+- **Use `useGLTF` for 3D models**: Always with proper error handling and preloading
+- **Clone GLTF scenes once**: Use `useMemo` to prevent recreation on every render
+- **Store stable references**: Use `useRef` for cloned scenes to prevent re-renders
+- **Apply materials correctly**: Use `MeshStandardMaterial` or `MeshBasicMaterial` to avoid uniform errors
+
+#### 3.4 **Event System Rules**
+- **Pointer events on meshes**: `onPointerOver`, `onPointerOut`, `onClick` work on 3D objects
+- **Stop propagation**: Always use `e.stopPropagation()` in event handlers
+- **Raycast setup**: Ensure meshes have `child.raycast = THREE.Mesh.prototype.raycast`
+- **Event delegation**: Handle events at the mesh level, not parent groups
+
+#### 3.5 **Material and Rendering Rules**
+- **Avoid uniform errors**: Use basic materials for UI elements, standard materials for 3D objects
+- **Material updates**: Update material properties, don't replace entire materials
+- **Performance**: Use `useMemo` for material creation and updates
+- **Color management**: Use `THREE.Color` for color operations
+
+#### 3.6 **Common Error Prevention**
+- **"Div is not part of THREE namespace"**: Move HTML elements outside Canvas
+- **"uniforms.emissive is undefined"**: Use `MeshBasicMaterial` instead of `MeshStandardMaterial`
+- **Performance issues**: Check for unnecessary re-renders and material recreation
+- **Event not working**: Ensure proper raycast setup and event propagation
+
+#### 3.7 **File Structure for R3F**
+```
+app/
+├── page.tsx                 # Main page with Canvas and HTML overlays
+├── components/
+│   ├── FastSneakerCustomizer.tsx  # 3D component (inside Canvas)
+│   └── ColorPicker.tsx            # HTML component (outside Canvas)
+└── types/
+    └── index.ts             # TypeScript definitions
+```
+
+#### 3.8 **Debugging R3F Issues**
+- **Check Canvas content**: Ensure only Three.js objects are inside
+- **Verify event setup**: Check raycast and event handlers
+- **Performance monitoring**: Use React DevTools and browser profiler
+- **Console errors**: Look for R3F-specific error messages
+- **State flow**: Trace state from HTML to 3D components
+
+### 4. **WebXR Integration**
+- Use `@react-three/xr` v6 API with `createXRStore`
+- Implement custom XR buttons instead of deprecated `VRButton`/`ARButton`
+- Wrap 3D scenes in `<XR>` component with `Suspense`
+- Follow VR best practices for user comfort
+
+### 5. **TypeScript Standards**
+- Define types in `./app/types/` folder
+- Use generic types when possible (e.g., GLTF type)
+- Avoid `any` types - use proper TypeScript interfaces
+- Export types for reusability across components
+
+### 6. **UI/UX Principles**
+- Keep UI panels positioned to the left of the 3D scene
+- Use dark themes with pink accents for modern look
+- Implement intuitive mouse controls (drag to rotate, scroll to zoom)
+- Provide clear visual feedback for interactions
+- Make all interactive elements accessible
+
+### 7. **Code Organization**
+- Group related functionality together
+- Use descriptive variable and function names
+- Add comments explaining complex 3D operations
+- Keep components focused on single responsibilities
+- Use proper React hooks patterns
+
+### 8. **Error Handling**
+- Always handle GLTF loading errors gracefully
+- Fix `uniforms.emissive is undefined` errors by using basic materials
+- Implement proper error boundaries for 3D components
+- Test in both desktop and VR modes
+
+### 9. **Material and Lighting**
+- Use `MeshBasicMaterial` for UI elements to avoid conflicts
+- Keep lighting simple with point lights and ambient light
+- Avoid complex material properties that cause uniform errors
+- Use consistent color schemes throughout the app
+
+### 10. **Interaction Design**
+- Implement mouse drag for 360-degree rotation
+- Use scroll wheel for scaling
+- Arrow keys for position adjustment
+- Click on 3D parts for selection
+- Provide visual feedback for all interactions
+
+## 🚫 What NOT to Do
+
+### React Three Fiber - CRITICAL DON'Ts
+- **NEVER put HTML elements inside `<Canvas>`** - This causes "Div is not part of THREE namespace" error
+- **NEVER mix HTML and 3D components** - Keep them completely separate
+- **NEVER create materials in render loops** - Use `useMemo` or `useCallback`
+- **NEVER forget `e.stopPropagation()`** - Events will bubble and cause issues
+- **NEVER use `any` types for Three.js objects** - Use proper TypeScript interfaces
+- **NEVER recreate GLTF scenes on every render** - Clone once with `useMemo`
+
+### General Project Don'ts
+- Don't create new files unless absolutely necessary
+- Don't use deprecated `Controllers` and `Hands` from `@react-three/xr`
+- Don't apply complex materials that cause uniform errors
+- Don't enable camera controls in VR mode
+- Don't create overly complex animations
+- Don't use `any` types in TypeScript
+- Don't forget to handle loading states for 3D models
+
+## 🚨 Common R3F Errors and Solutions
+
+### Error: "Div is not part of the THREE namespace!"
+**Cause**: HTML element inside `<Canvas>`
+**Solution**: Move HTML outside Canvas, use `position: fixed` for overlays
+```tsx
+// ❌ WRONG - HTML inside Canvas
+<Canvas>
+  <div>This breaks R3F!</div>
+</Canvas>
+
+// ✅ CORRECT - HTML outside Canvas
+<Canvas>
+  <Your3DComponent />
+</Canvas>
+<div style={{ position: 'fixed', top: 0, left: 0 }}>This works!</div>
+```
+
+### Error: "uniforms.emissive is undefined"
+**Cause**: Using `MeshStandardMaterial` without proper setup
+**Solution**: Use `MeshBasicMaterial` for UI elements or set emissive properly
+```tsx
+// ❌ WRONG - Missing emissive setup
+<meshStandardMaterial color="red" />
+
+// ✅ CORRECT - Basic material for UI
+<meshBasicMaterial color="red" />
+
+// ✅ CORRECT - Standard material with emissive
+<meshStandardMaterial 
+  color="red" 
+  emissive="red" 
+  emissiveIntensity={0.2} 
+/>
+```
+
+### Error: Events not working on 3D objects
+**Cause**: Missing raycast setup or event propagation
+**Solution**: Set up raycast and stop propagation
+```tsx
+// ✅ CORRECT - Proper event setup
+useEffect(() => {
+  if (!clonedScene) return;
+  clonedScene.traverse((child: any) => {
+    if (child.isMesh) {
+      child.raycast = THREE.Mesh.prototype.raycast;
+    }
+  });
+}, [clonedScene]);
+
+const handleClick = useCallback((e: any) => {
+  e.stopPropagation(); // CRITICAL!
+  // Handle click
+}, []);
+```
+
+### Error: Performance issues, slow rendering
+**Cause**: Recreating objects on every render
+**Solution**: Use `useMemo` and `useCallback` properly
+```tsx
+// ❌ WRONG - Recreates on every render
+const clonedScene = sneakerScene.clone(true);
+
+// ✅ CORRECT - Clone once
+const clonedScene = useMemo(() => {
+  if (!sneakerScene) return null;
+  return sneakerScene.clone(true);
+}, [sneakerScene]);
+```
+
+## 📚 React Three Fiber Quick Reference
+
+### Essential Imports
+```tsx
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, useFrame, useThree, OrbitControls, Environment, ContactShadows, PerspectiveCamera, Bounds, useCursor, Html } from '@react-three/drei';
+import { XR, useXR, createXRStore } from '@react-three/xr';
+import * as THREE from 'three';
+```
+
+### Basic Canvas Structure
+```tsx
+<Canvas shadows gl={{ outputColorSpace: THREE.SRGBColorSpace }}>
+  <Suspense fallback={null}>
+    <XR>
+      <PerspectiveCamera makeDefault position={[0, 1.6, 5]} />
+      <Environment preset="studio" />
+      <Your3DComponent />
+      <OrbitControls makeDefault />
+    </XR>
+  </Suspense>
+</Canvas>
+{/* HTML overlays go here, outside Canvas */}
+```
+
+### Event Handling Pattern
+```tsx
+const handlePointerOver = useCallback((e: any) => {
+  e.stopPropagation();
+  const partName = e.object.userData?.partName || e.object.name;
+  if (partName) {
+    setHoveredPart(partName);
+  }
+}, []);
+
+const handleClick = useCallback((e: any) => {
+  e.stopPropagation();
+  const partName = e.object.userData?.partName || e.object.name;
+  if (partName) {
+    setClickedPart(partName);
+  }
+}, []);
+```
+
+### Material Setup
+```tsx
+// For 3D objects with lighting
+<meshStandardMaterial 
+  color={color}
+  emissive={isHovered ? '#ffffff' : '#000000'}
+  emissiveIntensity={isHovered ? 0.2 : 0}
+  roughness={0.7}
+  metalness={0.3}
+/>
+
+// For UI elements (no lighting needed)
+<meshBasicMaterial color={color} />
+```
+
+## ✅ Quality Checklist
+
+### React Three Fiber Checklist
+- [ ] **Canvas Content**: Only Three.js objects inside Canvas
+- [ ] **HTML Overlays**: All HTML elements outside Canvas with `position: fixed`
+- [ ] **Event Handling**: Proper `e.stopPropagation()` and raycast setup
+- [ ] **Performance**: No object recreation in render loops
+- [ ] **Materials**: Correct material types for use case
+- [ ] **State Management**: Clean separation between 3D and HTML components
+
+### General Project Checklist
+- [ ] Performance: 90fps target maintained
+- [ ] VR Compatibility: Works in VR mode
+- [ ] Error Free: No console errors or uniform issues
+- [ ] Clean Code: No unused imports or dead code
+- [ ] TypeScript: All types properly defined
+- [ ] UI/UX: Intuitive controls and clear feedback
+- [ ] File Management: No unnecessary new files created
+
+## 🎨 Design Guidelines
+
+- **Colors**: Dark backgrounds (#1a1a1a, #2a2a2a) with pink accents (#ff69b4)
+- **Typography**: Clean, modern fonts
+- **Layout**: Left-aligned UI panels, centered 3D content
+- **Interactions**: Smooth, responsive mouse controls
+- **Visual Hierarchy**: Clear separation between UI and 3D content
+
+## 🔧 Development Workflow
+
+1. Always test changes in both desktop and VR modes
+2. Check performance with browser dev tools
+3. Verify no console errors
+4. Test all interaction controls
+5. Ensure 3D models load properly
+6. Validate TypeScript compilation
+7. Clean up unused code immediately
+
+## 📱 VR-Specific Rules
+
+- Disable camera controls for stable VR experience
+- Use fixed camera positions optimized for VR viewing
+- Implement comfortable interaction patterns
+- Avoid motion sickness with stable scenes
+- Focus user attention on the 3D product
+- Provide clear visual feedback for VR interactions
+
+## 🎨 Styling and Design Rules
+
+### Visual Design Principles - Girly Pop Aesthetic
+- **Color Palette**: 
+  - Primary: Dark backgrounds (#1a1a1a, #2a2a2a, #0f0f0f)
+  - Accent: Hot pink (#ff69b4), bubblegum pink (#ffc0cb), lavender (#e6e6fa)
+  - Secondary: Mint green (#98fb98), sky blue (#87ceeb), pearl white (#f8f8ff)
+  - Gradient combinations: Pink-to-purple, mint-to-blue, pearl-to-pink
+- **Girly Pop Aesthetic**: 
+  - Soft, rounded corners (border-radius: 12-20px)
+  - Subtle glitter/sparkle effects (CSS box-shadow with pink glows)
+  - Pastel color combinations with high contrast text
+  - Cute, friendly typography (avoid harsh, angular fonts)
+  - Playful but professional balance
+- **Modern Aesthetic**: Clean, minimalist design with subtle gradients and shadows
+- **Consistency**: Use the same color scheme across all UI elements
+- **Visual Hierarchy**: Clear separation between UI panels and 3D content
+- **Professional Look**: Girly pop but not overly flashy or distracting
+
+### UI Component Styling - Girly Pop Theme
+- **Panels**: 
+  - Rounded corners (16-20px border-radius)
+  - Subtle pink glow borders (box-shadow: 0 0 20px rgba(255, 105, 180, 0.3))
+  - Gradient backgrounds (dark-to-darker with pink accents)
+  - Proper spacing (padding: 16-24px)
+- **Buttons**: 
+  - Hover effects with pink glow (transform: scale(1.05), pink shadow)
+  - Clear states: active (bright pink), disabled (muted pink), selected (lavender)
+  - Rounded corners (12-16px border-radius)
+  - Smooth transitions (transition: all 0.3s ease)
+- **Text**: 
+  - Readable fonts (Inter, Poppins, or similar friendly sans-serif)
+  - Appropriate sizing (14-18px body, 24-32px headings)
+  - High contrast (white text on dark, dark text on light pink)
+  - Cute but professional tone
+- **Icons**: 
+  - Simple, clear, consistent style
+  - Rounded, friendly shapes (avoid sharp angles)
+  - Pink/mint color scheme
+  - Slightly larger for better VR visibility
+- **Animations**: 
+  - Smooth, subtle transitions (0.3s ease)
+  - Gentle bounces for buttons (cubic-bezier easing)
+  - Floating animations for 3D elements
+  - Avoid jarring movements (no sudden snaps or jumps)
+
+### Responsive Design
+- **Mobile-First**: Ensure UI works on smaller screens
+- **Touch-Friendly**: Adequate button sizes for touch interaction (minimum 44px)
+- **Scalable**: UI should adapt to different screen sizes
+- **Accessible**: High contrast, readable text, clear interactive elements
+
+### VR UI Best Practices
+- **UI Positioning**: 
+  - Position UI panels to the left of 3D content (x: -6 to -8)
+  - Keep UI at comfortable viewing distance (not too close to face)
+  - Avoid UI elements directly in center of vision
+- **Button Sizing**: 
+  - Minimum 60px x 60px for VR interaction
+  - Generous spacing between interactive elements (minimum 20px)
+  - Large, clear text (minimum 16px, preferably 18-20px)
+- **Color Contrast**: 
+  - High contrast ratios (4.5:1 minimum, 7:1 preferred)
+  - Avoid pure white text on pure black (use off-white #f8f8ff)
+  - Pink accents should be bright enough for VR visibility
+- **Motion and Animation**: 
+  - Keep animations subtle and comfortable (no fast movements)
+  - Avoid motion that could cause VR sickness
+  - Smooth transitions (0.3s ease, no sudden changes)
+- **Depth and Layering**: 
+  - Use subtle shadows and glows for depth perception
+  - Layer UI elements properly (z-index management)
+  - Avoid too many overlapping elements
+- **Interaction Feedback**: 
+  - Clear visual feedback for all interactions
+  - Hover states with gentle scaling (1.05x)
+  - Active states with color changes
+  - Loading states with gentle animations
+
+### UX Best Practices for Sneaker Customizer
+- **Part Selection Flow**: 
+  - Click on sneaker part → Highlight in pink → Show part name → Display color options
+  - Clear visual indication of selected part (pink glow, size increase)
+  - Easy deselection (click elsewhere or click same part again)
+- **Color Customization**: 
+  - Grid layout for color palette (4x2 or 4x3)
+  - Live preview of color changes on sneaker
+  - Selected color indicator (ring around color swatch)
+  - Color names or hex codes for accessibility
+- **3D Interaction**: 
+  - Smooth mouse drag rotation (horizontal and vertical)
+  - Scroll wheel zoom with reasonable limits (1x to 20x scale)
+  - Keyboard shortcuts for common actions (R for reset, arrows for position)
+  - Visual feedback during rotation/zoom operations
+- **Information Architecture**: 
+  - Left panel: Main controls and part selection
+  - Color palette: Easy access, visual swatches
+  - Status indicators: Current part, size, rotation angle
+  - Help text: Brief instructions for new users
+- **Performance UX**: 
+  - Instant feedback for all interactions
+  - Smooth 90fps animations
+  - Loading states for 3D model operations
+  - Error handling with user-friendly messages
+- **Accessibility UX**: 
+  - Keyboard navigation support
+  - Screen reader friendly labels
+  - High contrast mode support
+  - Alternative input methods (touch, voice commands)
+
+## 💬 Communication and Tone Rules
+
+### Response Style Guidelines
+- **Professional yet Friendly**: Maintain a helpful, approachable tone
+- **Clear and Concise**: Explain technical concepts in simple terms
+- **Educational**: Help users understand what's happening and why
+- **Encouraging**: Celebrate successes and progress
+- **Patient**: Don't assume knowledge - explain thoroughly
+
+### Language Preferences
+- **Inclusive Language**: Use gender-neutral terms when possible
+- **Positive Framing**: Focus on solutions, not just problems
+- **Action-Oriented**: Use active voice and clear instructions
+- **Technical Accuracy**: Be precise with technical terminology
+- **User-Centric**: Always consider the user's perspective
+
+### Documentation Style
+- **Step-by-Step**: Break down complex tasks into clear steps
+- **Examples**: Provide code examples and visual references
+- **Context**: Explain the "why" behind recommendations
+- **Updates**: Keep documentation current with code changes
+- **Accessibility**: Write for users of all technical levels
+
+### Feedback and Suggestions
+- **Constructive**: Offer improvements, not just criticism
+- **Specific**: Provide detailed, actionable feedback
+- **Collaborative**: Work together toward solutions
+- **Respectful**: Acknowledge different perspectives and preferences
+- **Growth-Oriented**: Focus on learning and improvement
+
+## 🎯 Project-Specific Communication
+
+### When Discussing Features
+- Always consider VR/XR implications
+- Explain performance impact of design choices
+- Reference the sneaker customization context
+- Consider user experience in immersive environments
+- Balance aesthetics with functionality
+
+### When Troubleshooting
+- Check VR compatibility first
+- Verify performance impact
+- Test in both desktop and VR modes
+- Consider the 90fps target
+- Ensure smooth user interactions
+
+### When Making Suggestions
+- Prioritize VR user experience
+- Consider the sneaker customization workflow
+- Maintain the project's visual identity
+- Ensure accessibility and usability
+- Keep performance optimization in mind
+
+### Girly Pop Design Implementation Examples
+- **CSS Variables for Consistency**:
+  ```css
+  :root {
+    --pink-primary: #ff69b4;
+    --pink-secondary: #ffc0cb;
+    --pink-accent: #e6e6fa;
+    --mint-green: #98fb98;
+    --sky-blue: #87ceeb;
+    --pearl-white: #f8f8ff;
+    --dark-bg: #1a1a1a;
+    --darker-bg: #0f0f0f;
+  }
+  ```
+- **Button Styles**:
+  ```css
+  .girly-button {
+    background: linear-gradient(135deg, var(--pink-primary), var(--pink-secondary));
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(255, 105, 180, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  ```
+- **Panel Styles**:
+  ```css
+  .girly-panel {
+    background: linear-gradient(145deg, var(--dark-bg), var(--darker-bg));
+    border: 1px solid rgba(255, 105, 180, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 0 30px rgba(255, 105, 180, 0.1);
+  }
+  ```
+
+### Quality Assurance Checklist
+- [ ] **Girly Pop Aesthetic**: Pink/mint color scheme, rounded corners, gentle glows
+- [ ] **VR Compatibility**: 90fps performance, comfortable UI positioning
+- [ ] **UX Flow**: Intuitive part selection and color customization
+- [ ] **Accessibility**: High contrast, keyboard navigation, screen reader support
+- [ ] **Performance**: Smooth animations, instant feedback, no lag
+- [ ] **Code Quality**: Clean TypeScript, proper error handling, maintainable structure
+- [ ] **Visual Hierarchy**: Clear separation between UI and 3D content
+- [ ] **Interaction Feedback**: Hover effects, active states, loading indicators
+
+Remember: This is a VR sneaker customizer focused on performance, usability, and immersive experience with a girly pop aesthetic. Every decision should enhance the VR user experience while maintaining clean, maintainable code and providing excellent user communication. The design should be cute, professional, and optimized for VR interaction.

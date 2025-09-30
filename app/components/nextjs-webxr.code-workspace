@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../Downloads/webxr-showcases-main/sneaker-builder/src/assets/audio"
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
