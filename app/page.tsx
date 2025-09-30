@@ -7,6 +7,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, PerspectiveCamera } from '@react-three/drei';
 import { XR, createXRStore } from '@react-three/xr';
 import { FastSneakerCustomizer } from './components/FastSneakerCustomizer';
+import { ColorPicker } from './components/ColorPicker';
 import { Suspense, useState } from 'react';
 import * as THREE from 'three';
 
@@ -91,33 +92,7 @@ export default function Home() {
     }
   });
   
-  // Color palette
-  const SNEAKER_COLORS = [
-    { name: 'Pure White', value: '#ffffff' },
-    { name: 'Pure Black', value: '#000000' },
-    { name: 'Platform Pink', value: '#ff69b4' },
-    { name: 'Deep Pink', value: '#ff1493' },
-    { name: 'Rose Pink', value: '#f8bbd9' },
-    { name: 'Light Pink', value: '#ff91a4' },
-    { name: 'Dark Gray', value: '#1a1a1a' },
-    { name: 'Charcoal', value: '#374151' },
-    { name: 'Medium Gray', value: '#6b7280' },
-    { name: 'Light Gray', value: '#9ca3af' },
-    { name: 'Silver', value: '#d1d5db' },
-    { name: 'Off White', value: '#f8fafc' },
-    { name: 'Warm Beige', value: '#f5deb3' },
-    { name: 'Cream', value: '#fff8dc' },
-    { name: 'Tan', value: '#d2b48c' },
-    { name: 'Brown', value: '#8b4513' },
-    { name: 'Coral', value: '#ff7f7f' },
-    { name: 'Peach', value: '#ffcccb' },
-    { name: 'Sky Blue', value: '#87ceeb' },
-    { name: 'Lavender', value: '#e6e6fa' },
-    { name: 'Mint', value: '#a7f3d0' },
-    { name: 'Teal', value: '#008080' },
-    { name: 'Navy', value: '#000080' },
-    { name: 'Purple', value: '#800080' }
-  ];
+  // Color picker now uses a modern color wheel interface
   
   // Update part color function
   const updatePartColor = (part: string, color: string) => {
@@ -343,137 +318,22 @@ export default function Home() {
       
       {/* Loading indicator temporarily removed to debug R3F error */}
 
-      {/* Fixed right-side color picker panel - OUTSIDE Canvas */}
-      {customizerOpen && selectedPartForColor && (
-        <div
-          style={{
-            position: 'fixed',
-            right: 24,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 320,
-            background: 'linear-gradient(145deg, #1a1a1a, #0f0f0f)',
-            border: '1px solid rgba(255,105,180,0.3)',
-            borderRadius: 20,
-            boxShadow: '0 8px 32px rgba(255,105,180,0.25)',
-            color: '#f8f8ff',
-            padding: 20,
-            fontFamily: 'Inter, ui-sans-serif, system-ui',
-            zIndex: 9999,
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          {/* Header */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ 
-              fontWeight: 600, 
-              marginBottom: 4, 
-              fontSize: 12, 
-              opacity: 0.7,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              Currently Configuring
-            </div>
-            <div style={{ 
-              fontWeight: 700, 
-              fontSize: 20,
-              color: '#ff69b4',
-              textTransform: 'capitalize'
-            }}>
-              {selectedPartForColor.replace(/_/g, ' ')}
-            </div>
-          </div>
-
-          {/* Color Swatches Grid */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(6, 1fr)', 
-            gap: 10,
-            marginBottom: 20
-          }}>
-            {SNEAKER_COLORS.map((c, idx) => {
-              const selected = options.partColors[selectedPartForColor] === c.value;
-              return (
-                <button
-                  key={idx}
-                  aria-label={`Choose ${c.name}`}
-                  onClick={() => updatePartColor(selectedPartForColor, c.value)}
-                  style={{
-                    width: 40, 
-                    height: 40, 
-                    borderRadius: 12,
-                    border: selected ? '3px solid #ff69b4' : '2px solid rgba(255,255,255,0.2)',
-                    background: c.value, 
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: selected ? '0 0 16px rgba(255,105,180,0.4)' : '0 2px 8px rgba(0,0,0,0.3)',
-                    transform: selected ? 'scale(1.05)' : 'scale(1)'
-                  }}
-                />
-              );
-            })}
-          </div>
-
-          {/* Hex Input and Close Button */}
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ 
-                display: 'block', 
-                fontSize: 12, 
-                fontWeight: 600, 
-                marginBottom: 6, 
-                opacity: 0.8,
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
-                Hex Color
-              </label>
-              <input
-                aria-label="Hex color"
-                defaultValue={options.partColors[selectedPartForColor]}
-                onBlur={(e) => {
-                  updatePartColor(selectedPartForColor, e.currentTarget.value);
-                  (e.target as HTMLInputElement).style.borderColor = 'rgba(255,255,255,0.2)';
-                }}
-                style={{
-                  width: '100%',
-                  background: 'rgba(15,15,15,0.8)',
-                  color: '#f8f8ff',
-                  border: '2px solid rgba(255,255,255,0.2)',
-                  borderRadius: 12,
-                  padding: '10px 12px',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  transition: 'all 0.2s ease',
-                  outline: 'none'
-                }}
-                onFocus={(e) => (e.target as HTMLInputElement).style.borderColor = '#ff69b4'}
-              />
-            </div>
-            <button
-              onClick={() => { setCustomizerOpen(false); setSelectedPartForColor(null); setClickedPart(null); }}
-              style={{
-                background: 'linear-gradient(135deg, #ff69b4, #ffc0cb)',
-                color: '#0f0f0f', 
-                border: 'none', 
-                borderRadius: 12,
-                padding: '12px 20px', 
-                fontWeight: 700, 
-                cursor: 'pointer',
-                fontSize: 14,
-                boxShadow: '0 4px 16px rgba(255,105,180,0.3)',
-                transition: 'all 0.2s ease',
-                minWidth: 80
-              }}
-              onMouseEnter={(e) => (e.target as HTMLButtonElement).style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => (e.target as HTMLButtonElement).style.transform = 'scale(1)'}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Modern Color Picker - OUTSIDE Canvas */}
+      <ColorPicker
+        isOpen={customizerOpen}
+        onClose={() => {
+          setCustomizerOpen(false);
+          setSelectedPartForColor(null);
+          setClickedPart(null);
+        }}
+        selectedPart={selectedPartForColor}
+        onColorChange={(color) => {
+          if (selectedPartForColor) {
+            updatePartColor(selectedPartForColor, color);
+          }
+        }}
+        currentColor={selectedPartForColor ? options.partColors[selectedPartForColor] : '#ff69b4'}
+      />
     </div>
   );
 }
