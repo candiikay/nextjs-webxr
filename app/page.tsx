@@ -8,6 +8,7 @@ import { OrbitControls, Environment, ContactShadows, PerspectiveCamera } from '@
 import { XR, createXRStore } from '@react-three/xr';
 import { FastSneakerCustomizer } from './components/FastSneakerCustomizer';
 import { ColorPicker } from './components/ColorPicker';
+import { BossChatEngine } from './components/BossChatEngine';
 import { Suspense, useState, useCallback } from 'react';
 import * as THREE from 'three';
 
@@ -26,6 +27,12 @@ export default function Home() {
   const [customizerOpen, setCustomizerOpen] = useState<boolean>(false);
   const [selectedPartForColor, setSelectedPartForColor] = useState<string | null>(null);
   const [clickedPart, setClickedPart] = useState<string | null>(null);
+  
+  // Game state
+  const [isGameActive, setIsGameActive] = useState<boolean>(false);
+  const [gameScore, setGameScore] = useState<number>(0);
+  const [currentChallenge, setCurrentChallenge] = useState<string | null>(null);
+  const [timeLimit, setTimeLimit] = useState<number>(0);
   const [options, setOptions] = useState<{
     partColors: Record<string, string>
   }>({
@@ -121,6 +128,29 @@ export default function Home() {
       updatePartColor(selectedPartForColor, color);
     }
   }, [selectedPartForColor, updatePartColor]);
+
+  // Game event handlers
+  const handleChallengeStart = useCallback((timeLimit: number, challenge: string) => {
+    setTimeLimit(timeLimit);
+    setCurrentChallenge(challenge);
+    setIsGameActive(true);
+    // Add some visual urgency to the scene
+    document.body.style.animation = 'urgentPulse 2s infinite';
+  }, []);
+
+  const handleChallengeComplete = useCallback((score: number) => {
+    setGameScore(prev => prev + score);
+    setIsGameActive(false);
+    setCurrentChallenge(null);
+    setTimeLimit(0);
+    // Remove urgency animation
+    document.body.style.animation = 'none';
+  }, []);
+
+  const handleBossMessage = useCallback((message: string) => {
+    console.log('Boss says:', message);
+    // Could add sound effects or other feedback here
+  }, []);
 
   return (
     // Container div that takes up the full viewport (100% width and height)
@@ -346,6 +376,39 @@ export default function Home() {
           currentColor={options.partColors[selectedPartForColor] || '#ff69b4'}
         />
       )}
+
+      {/* Boss Chat Engine - Gamified sneaker customizer */}
+      <BossChatEngine
+        isActive={true}
+        onChallengeStart={handleChallengeStart}
+        onChallengeComplete={handleChallengeComplete}
+        onBossMessage={handleBossMessage}
+      />
     </div>
   );
+}
+
+// Add CSS animations for game urgency effects
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes urgentPulse {
+      0%, 100% {
+        box-shadow: inset 0 0 0 0 rgba(255, 68, 68, 0.1);
+      }
+      50% {
+        box-shadow: inset 0 0 0 20px rgba(255, 68, 68, 0.1);
+      }
+    }
+    
+    @keyframes urgentGlow {
+      0%, 100% {
+        filter: drop-shadow(0 0 5px rgba(255, 68, 68, 0.3));
+      }
+      50% {
+        filter: drop-shadow(0 0 20px rgba(255, 68, 68, 0.6));
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
