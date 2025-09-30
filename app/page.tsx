@@ -333,13 +333,16 @@ export default function Home() {
       {/* Loading indicator temporarily removed to debug R3F error */}
 
       {/* Modern Color Picker - OUTSIDE Canvas */}
-      <ColorPicker
-        isOpen={customizerOpen}
-        onClose={closeColorPicker}
-        selectedPart={selectedPartForColor}
-        onColorChange={handleColorChange}
-        currentColor={selectedPartForColor ? options.partColors[selectedPartForColor] : '#ff69b4'}
-      />
+      {customizerOpen && selectedPartForColor && (
+        <ColorPicker
+          key={`color-picker-${selectedPartForColor}`}
+          isOpen={customizerOpen}
+          onClose={closeColorPicker}
+          selectedPart={selectedPartForColor}
+          onColorChange={handleColorChange}
+          currentColor={options.partColors[selectedPartForColor] || '#ff69b4'}
+        />
+      )}
     </div>
   );
 }

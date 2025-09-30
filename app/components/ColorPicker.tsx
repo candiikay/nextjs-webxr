@@ -21,6 +21,9 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
   const colorWheelRef = useRef<HTMLDivElement>(null);
   const slPickerRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging to see if component is re-mounting
+  console.log('🎨 ColorPicker render:', { isOpen, selectedPart, currentColor });
+
   // Convert HSL to hex
   const hslToHex = (h: number, s: number, l: number): string => {
     const hNorm = h / 360;
@@ -181,13 +184,13 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
         right: 24,
         top: '50%',
         transform: 'translateY(-50%)',
-        width: 360,
+        width: 280,
         background: 'linear-gradient(145deg, #1a1a1a, #0f0f0f)',
         border: '1px solid rgba(255,105,180,0.3)',
-        borderRadius: 20,
+        borderRadius: 16,
         boxShadow: '0 8px 32px rgba(255,105,180,0.25)',
         color: '#f8f8ff',
-        padding: 24,
+        padding: 16,
         fontFamily: 'Inter, ui-sans-serif, system-ui',
         zIndex: 9999,
         backdropFilter: 'blur(10px)',
@@ -217,12 +220,12 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       </div>
 
       {/* Color Wheel */}
-      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
         <div
           ref={colorWheelRef}
           style={{
-            width: 200,
-            height: 200,
+            width: 140,
+            height: 140,
             margin: '0 auto',
             borderRadius: '50%',
             background: `conic-gradient(
@@ -236,7 +239,7 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
             )`,
             position: 'relative',
             cursor: 'crosshair',
-            border: '3px solid rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.2)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
           }}
           onMouseDown={handleColorWheelMouseDown}
@@ -247,12 +250,12 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
               position: 'absolute',
               top: '50%',
               left: '50%',
-              width: 20,
-              height: 20,
+              width: 16,
+              height: 16,
               borderRadius: '50%',
               background: '#fff',
-              border: '3px solid #000',
-              transform: `translate(-50%, -50%) rotate(${hue}deg) translateY(-90px)`,
+              border: '2px solid #000',
+              transform: `translate(-50%, -50%) rotate(${hue}deg) translateY(-60px)`,
               pointerEvents: 'none',
               boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
             }}
@@ -261,12 +264,12 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       </div>
 
       {/* Saturation/Lightness Picker */}
-      <div style={{ marginBottom: 20, textAlign: 'center' }}>
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
         <div
           ref={slPickerRef}
           style={{
-            width: 200,
-            height: 200,
+            width: 140,
+            height: 140,
             margin: '0 auto',
             background: `hsl(${hue}, 100%, 50%)`,
             position: 'relative',
@@ -281,8 +284,8 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
           <div
             style={{
               position: 'absolute',
-              width: 16,
-              height: 16,
+              width: 12,
+              height: 12,
               borderRadius: '50%',
               background: '#fff',
               border: '2px solid #000',
@@ -301,21 +304,21 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        marginBottom: 20,
-        padding: '12px 16px',
+        marginBottom: 16,
+        padding: '8px 12px',
         background: 'rgba(255,255,255,0.05)',
-        borderRadius: 12,
+        borderRadius: 8,
         border: '1px solid rgba(255,255,255,0.1)'
       }}>
-        <div style={{ fontSize: 14, fontWeight: 500 }}>
-          Selected Color:
+        <div style={{ fontSize: 12, fontWeight: 500 }}>
+          Color:
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
+              width: 24,
+              height: 24,
+              borderRadius: 6,
               background: currentHex,
               border: '2px solid rgba(255,255,255,0.2)',
               boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
@@ -323,7 +326,7 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
           />
           <div style={{ 
             fontFamily: 'monospace', 
-            fontSize: 14, 
+            fontSize: 12, 
             fontWeight: 600,
             color: '#ff69b4'
           }}>
@@ -336,13 +339,13 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '1fr 1fr 1fr', 
-        gap: 12, 
-        marginBottom: 20 
+        gap: 8, 
+        marginBottom: 16 
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>HUE</div>
+          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>HUE</div>
           <div style={{ 
-            fontSize: 16, 
+            fontSize: 12, 
             fontWeight: 600,
             color: '#fff'
           }}>
@@ -350,9 +353,9 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>SAT</div>
+          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>SAT</div>
           <div style={{ 
-            fontSize: 16, 
+            fontSize: 12, 
             fontWeight: 600,
             color: '#fff'
           }}>
@@ -360,9 +363,9 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
           </div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>LIGHT</div>
+          <div style={{ fontSize: 9, color: '#9ca3af', marginBottom: 2 }}>LIGHT</div>
           <div style={{ 
-            fontSize: 16, 
+            fontSize: 12, 
             fontWeight: 600,
             color: '#fff'
           }}>
@@ -376,12 +379,12 @@ export function ColorPicker({ isOpen, onClose, selectedPart, onColorChange, curr
         onClick={onClose}
         style={{
           width: '100%',
-          padding: '12px 16px',
+          padding: '8px 12px',
           background: 'linear-gradient(135deg, #ff69b4, #ffc0cb)',
           color: '#0f0f0f',
           border: 'none',
-          borderRadius: 12,
-          fontSize: 14,
+          borderRadius: 8,
+          fontSize: 12,
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'all 0.3s ease',
