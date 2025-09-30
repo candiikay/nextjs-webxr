@@ -8,8 +8,10 @@ import { OrbitControls, Environment, ContactShadows, PerspectiveCamera } from '@
 import { XR, createXRStore } from '@react-three/xr';
 import { FastSneakerCustomizer } from './components/FastSneakerCustomizer';
 import { ColorPicker } from './components/ColorPicker';
-import { BossChatEngine } from './components/BossChatEngine';
-import { Suspense, useState, useCallback } from 'react';
+import { DrawingTool } from './components/DrawingTool';
+import { CameraSetup } from './components/CameraSetup';
+import { CustomerMessagingSystem } from './components/CustomerMessagingSystem';
+import { Suspense, useState, useCallback, useRef } from 'react';
 import * as THREE from 'three';
 
 // Create XR store for managing VR/AR sessions
@@ -28,11 +30,20 @@ export default function Home() {
   const [selectedPartForColor, setSelectedPartForColor] = useState<string | null>(null);
   const [clickedPart, setClickedPart] = useState<string | null>(null);
   
-  // Game state
-  const [isGameActive, setIsGameActive] = useState<boolean>(false);
-  const [gameScore, setGameScore] = useState<number>(0);
-  const [currentChallenge, setCurrentChallenge] = useState<string | null>(null);
-  const [timeLimit, setTimeLimit] = useState<number>(0);
+  // Drawing tool state
+  const [drawingToolOpen, setDrawingToolOpen] = useState<boolean>(false);
+  const [selectedPartForDrawing, setSelectedPartForDrawing] = useState<string | null>(null);
+  const [partTextures, setPartTextures] = useState<Record<string, string | null>>({});
+  const [customizationMode, setCustomizationMode] = useState<'color' | 'draw'>('color');
+  
+  // Drawing tool brush state
+  const [brushSize, setBrushSize] = useState<number>(10);
+  const [brushOpacity, setBrushOpacity] = useState<number>(1);
+  const [brushColor, setBrushColor] = useState<string>('#ff69b4');
+  
+  // Camera and raycaster refs for drawing
+  const cameraRef = useRef<THREE.Camera | null>(null);
+  const raycasterRef = useRef<THREE.Raycaster | null>(null);
   const [options, setOptions] = useState<{
     partColors: Record<string, string>
   }>({
@@ -101,13 +112,43 @@ export default function Home() {
   
   // Color picker now uses a modern color wheel interface
   
-  // Update part color function - memoized to prevent re-renders
-  const updatePartColor = useCallback((part: string, color: string) => {
-    setOptions(prev => ({
-      ...prev,
-      partColors: { ...prev.partColors, [part]: color }
-    }));
+  // Customer game state
+  const [designBudget, setDesignBudget] = useState(0);
+  const [colorChangeCost, setColorChangeCost] = useState(10);
+  
+  // Ref to store the messaging system's color change handler
+  const messagingColorChangeRef = useRef<((cost: number) => void) | null>(null);
+  
+  // Ref for the sneaker mesh for direct drawing
+  const sneakerMeshRef = useRef<THREE.Object3D | null>(null);
+  
+  // Handle color change with budget deduction
+  const handleColorChange = useCallback((cost: number) => {
+    setDesignBudget(prev => Math.max(0, prev - cost));
   }, []);
+
+  // Handle budget update
+  const handleBudgetUpdate = useCallback((remaining: number) => {
+    setDesignBudget(remaining);
+  }, []);
+
+  // Update part color function - now with budget system
+  const updatePartColor = useCallback((part: string, color: string) => {
+    if (designBudget >= colorChangeCost) {
+      setOptions(prev => ({
+        ...prev,
+        partColors: { ...prev.partColors, [part]: color }
+      }));
+      handleColorChange(colorChangeCost);
+      // Also notify the messaging system about the color change
+      if (messagingColorChangeRef.current) {
+        messagingColorChangeRef.current(colorChangeCost);
+      }
+    } else {
+      // Show budget warning
+      console.log('Not enough budget for color change!');
+    }
+  }, [designBudget, colorChangeCost, handleColorChange]);
 
   // Apply color and close picker function
   const applyColorAndClose = useCallback((part: string, color: string) => {
@@ -122,35 +163,56 @@ export default function Home() {
 
   // Color picker is now closed via applyColorAndClose function
 
-  // Color change handler - memoized to prevent re-renders
-  const handleColorChange = useCallback((color: string) => {
-    if (selectedPartForColor) {
-      updatePartColor(selectedPartForColor, color);
-    }
-  }, [selectedPartForColor, updatePartColor]);
+  // Drawing tool functions
+  const openDrawingTool = useCallback((part: string) => {
+    setSelectedPartForDrawing(part);
+    setDrawingToolOpen(true);
+    setCustomizerOpen(false);
+  }, []);
 
-  // Game event handlers
-  const handleChallengeStart = useCallback((timeLimit: number, challenge: string) => {
-    setTimeLimit(timeLimit);
-    setCurrentChallenge(challenge);
-    setIsGameActive(true);
+  const closeDrawingTool = useCallback(() => {
+    setDrawingToolOpen(false);
+    setSelectedPartForDrawing(null);
+  }, []);
+
+  const applyDrawing = useCallback((part: string, textureData: string) => {
+    setPartTextures(prev => ({ ...prev, [part]: textureData }));
+    closeDrawingTool();
+  }, [closeDrawingTool]);
+
+  // Handle part click - now supports both color and drawing modes
+  const handlePartClick = useCallback((part: string) => {
+    if (customizationMode === 'color') {
+      setSelectedPartForColor(part);
+      setCustomizerOpen(true);
+      setDrawingToolOpen(false);
+      setClickedPart(part);
+    } else {
+      openDrawingTool(part);
+      setClickedPart(part);
+    }
+  }, [customizationMode, openDrawingTool]);
+
+  // Customer game event handlers
+  const handleOrderStart = useCallback((order: any) => {
+    setDesignBudget(order.budget);
+    setColorChangeCost(10);
     // Add some visual urgency to the scene
     document.body.style.animation = 'urgentPulse 2s infinite';
   }, []);
 
-  const handleChallengeComplete = useCallback((score: number) => {
-    setGameScore(prev => prev + score);
-    setIsGameActive(false);
-    setCurrentChallenge(null);
-    setTimeLimit(0);
+  const handleOrderComplete = useCallback((score: number) => {
+    console.log('Order completed with score:', score);
     // Remove urgency animation
     document.body.style.animation = 'none';
   }, []);
 
-  const handleBossMessage = useCallback((message: string) => {
-    console.log('Boss says:', message);
-    // Could add sound effects or other feedback here
-  }, []);
+  // Color change handler - memoized to prevent re-renders
+  const handleColorChangeLive = useCallback((color: string) => {
+    if (selectedPartForColor) {
+      updatePartColor(selectedPartForColor, color);
+    }
+  }, [selectedPartForColor, updatePartColor]);
 
   return (
     // Container div that takes up the full viewport (100% width and height)
@@ -312,6 +374,9 @@ export default function Home() {
           These are our interactive 3D elements in the scene
         */}
         
+        {/* Camera Setup - Provides camera and raycaster refs for drawing */}
+        <CameraSetup cameraRef={cameraRef} raycasterRef={raycasterRef} />
+
         {/* Fast Sneaker Customizer - Optimized for speed with girly pop design */}
         <FastSneakerCustomizer 
           resetSignal={resetSignal}
@@ -322,7 +387,12 @@ export default function Home() {
           clickedPart={clickedPart}
           setClickedPart={setClickedPart}
           partColors={options.partColors}
+          partTextures={partTextures}
+          onApplyDrawing={applyDrawing}
+          onPartClick={handlePartClick}
+          meshRef={sneakerMeshRef}
         />
+
         
         {/* VR Interaction Hints - Temporarily disabled to debug white lines */}
         {/* <VRControllerHints />
@@ -354,7 +424,7 @@ export default function Home() {
           maxDistance={14.0}
           minPolarAngle={Math.PI * 0.2}
           maxPolarAngle={Math.PI * 0.7}
-          rotateSpeed={0.0}
+          rotateSpeed={0.7}
           zoomSpeed={0.7}
         />
         
@@ -365,24 +435,317 @@ export default function Home() {
       
       {/* Loading indicator temporarily removed to debug R3F error */}
 
-      {/* Modern Color Picker - OUTSIDE Canvas */}
+      {/* Modern Color Picker - OUTSIDE Canvas, positioned below mode toggle */}
       {customizerOpen && selectedPartForColor && (
-        <ColorPicker
-          key={`color-picker-${selectedPartForColor}`}
-          isOpen={customizerOpen}
-          selectedPart={selectedPartForColor}
-          onColorChange={handleColorChange}
-          onApplyColor={(color) => applyColorAndClose(selectedPartForColor, color)}
-          currentColor={options.partColors[selectedPartForColor] || '#ff69b4'}
+        <div style={{
+          position: 'fixed',
+          top: '80px', // Below the mode toggle
+          right: '20px',
+          zIndex: 1000
+        }}>
+          <ColorPicker
+            key={`color-picker-${selectedPartForColor}`}
+            isOpen={customizerOpen}
+            selectedPart={selectedPartForColor}
+            onColorChange={handleColorChangeLive}
+            onApplyColor={(color) => applyColorAndClose(selectedPartForColor, color)}
+            currentColor={options.partColors[selectedPartForColor] || '#ff69b4'}
+          />
+        </div>
+      )}
+
+      {/* Drawing Tool Logic - Handles 3D drawing */}
+      {drawingToolOpen && selectedPartForDrawing && cameraRef.current && raycasterRef.current && (
+        <DrawingTool
+          isOpen={drawingToolOpen}
+          onClose={closeDrawingTool}
+          onApplyDrawing={applyDrawing}
+          selectedPart={selectedPartForDrawing}
+          currentColor={options.partColors[selectedPartForDrawing] || '#ff69b4'}
+          meshRef={sneakerMeshRef}
+          camera={cameraRef.current}
+          raycaster={raycasterRef.current}
+          brushSize={brushSize}
+          brushOpacity={brushOpacity}
+          brushColor={brushColor}
+          onBrushSizeChange={setBrushSize}
+          onBrushOpacityChange={setBrushOpacity}
+          onBrushColorChange={setBrushColor}
         />
       )}
 
-      {/* Boss Chat Engine - Gamified sneaker customizer */}
-      <BossChatEngine
-        isActive={true}
-        onChallengeStart={handleChallengeStart}
-        onChallengeComplete={handleChallengeComplete}
-        onBossMessage={handleBossMessage}
+      {/* Drawing Tool UI - OUTSIDE Canvas, positioned below mode toggle on right */}
+      {drawingToolOpen && selectedPartForDrawing && (
+        <div style={{
+          position: 'fixed',
+          top: '80px', // Below the mode toggle
+          right: '20px',
+          zIndex: 1000,
+          background: 'rgba(26, 26, 26, 0.9)',
+          padding: '16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(255, 105, 180, 0.3)',
+          backdropFilter: 'blur(10px)',
+          minWidth: '300px',
+          pointerEvents: 'auto'
+        }}>
+          {/* Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '16px',
+            paddingBottom: '12px',
+            borderBottom: '1px solid rgba(255, 105, 180, 0.2)'
+          }}>
+            <h3 style={{
+              color: '#ff69b4',
+              margin: 0,
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}>
+              ✏️ Draw on {selectedPartForDrawing}
+            </h3>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeDrawingTool();
+              }}
+              style={{
+                background: 'rgba(255, 105, 180, 0.2)',
+                border: '1px solid #ff69b4',
+                color: '#ff69b4',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              ✕ Close
+            </button>
+          </div>
+
+          {/* Instructions */}
+          <div style={{
+            marginBottom: '16px',
+            padding: '12px',
+            background: 'rgba(255, 105, 180, 0.1)',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 105, 180, 0.2)'
+          }}>
+            <p style={{
+              color: '#ffc0cb',
+              margin: 0,
+              fontSize: '14px',
+              textAlign: 'center'
+            }}>
+              💡 Click and drag directly on the shoe to draw!
+            </p>
+          </div>
+
+          {/* Drawing Controls */}
+          <div 
+            data-drawing-controls
+            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseMove={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Brush size */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ color: '#ff69b4', fontSize: '12px', fontWeight: 'bold', minWidth: '40px' }}>
+                Size:
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="50"
+                value={brushSize}
+                onChange={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBrushSize(Number(e.target.value));
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                style={{
+                  flex: 1,
+                  accentColor: '#ff69b4'
+                }}
+              />
+            </div>
+
+            {/* Brush opacity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ color: '#ff69b4', fontSize: '12px', fontWeight: 'bold', minWidth: '40px' }}>
+                Opacity:
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.1"
+                value={brushOpacity}
+                onChange={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBrushOpacity(Number(e.target.value));
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                style={{
+                  flex: 1,
+                  accentColor: '#ff69b4'
+                }}
+              />
+            </div>
+
+            {/* Color picker */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ color: '#ff69b4', fontSize: '12px', fontWeight: 'bold', minWidth: '40px' }}>
+                Color:
+              </label>
+              <input
+                type="color"
+                value={brushColor}
+                onChange={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setBrushColor(e.target.value);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onMouseMove={(e) => e.stopPropagation()}
+                onMouseUp={(e) => e.stopPropagation()}
+                style={{
+                  width: '40px',
+                  height: '30px',
+                  border: '1px solid #ff69b4',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Clear drawing logic here
+                }}
+                style={{
+                  background: 'rgba(255, 105, 180, 0.2)',
+                  border: '1px solid #ff69b4',
+                  color: '#ff69b4',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  transition: 'all 0.3s ease',
+                  flex: 1
+                }}
+              >
+                🗑️ Clear
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Apply drawing logic here
+                  closeDrawingTool();
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #ff69b4, #ffc0cb)',
+                  border: 'none',
+                  color: '#1a1a1a',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  transition: 'all 0.3s ease',
+                  flex: 1
+                }}
+              >
+                ✅ Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Mode Toggle */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 1001, // Higher z-index than controls
+        display: 'flex',
+        gap: '8px',
+        background: 'rgba(26, 26, 26, 0.9)',
+        padding: '8px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 105, 180, 0.3)',
+        backdropFilter: 'blur(10px)'
+      }}>
+        <button
+          onClick={() => {
+            setCustomizationMode('color');
+            setDrawingToolOpen(false); // Close drawing tool when switching to color
+          }}
+          style={{
+            background: customizationMode === 'color' ? '#ff69b4' : 'transparent',
+            color: customizationMode === 'color' ? '#1a1a1a' : '#ff69b4',
+            border: '1px solid #ff69b4',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            transition: 'all 0.3s ease',
+            opacity: customizationMode === 'color' ? 1 : 0.7
+          }}
+        >
+          🎨 Color
+        </button>
+        <button
+          onClick={() => {
+            setCustomizationMode('draw');
+            setCustomizerOpen(false); // Close color picker when switching to draw
+          }}
+          style={{
+            background: customizationMode === 'draw' ? '#ff69b4' : 'transparent',
+            color: customizationMode === 'draw' ? '#1a1a1a' : '#ff69b4',
+            border: '1px solid #ff69b4',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            transition: 'all 0.3s ease',
+            opacity: customizationMode === 'draw' ? 1 : 0.7
+          }}
+        >
+          ✏️ Draw
+        </button>
+      </div>
+
+      {/* Customer Messaging System - Pizza Game Style */}
+      <CustomerMessagingSystem
+        onOrderStart={handleOrderStart}
+        onOrderComplete={handleOrderComplete}
+        onColorChange={handleColorChange}
+        onBudgetUpdate={handleBudgetUpdate}
+        colorChangeRef={messagingColorChangeRef}
       />
     </div>
   );
@@ -407,6 +770,17 @@ if (typeof document !== 'undefined') {
       }
       50% {
         filter: drop-shadow(0 0 20px rgba(255, 68, 68, 0.6));
+      }
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
   `;

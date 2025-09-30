@@ -29,6 +29,7 @@ interface SneakerOptions {
   rotation: number;
   position: [number, number, number];
   partColors: Record<SneakerPart, string>;
+  partTextures: Record<SneakerPart, string | null>;
 }
 
 // Color palette is now defined in page.tsx
@@ -43,6 +44,10 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
   clickedPart?: string | null;
   setClickedPart?: (part: string | null) => void;
   partColors?: Record<string, string>;
+  partTextures?: Record<string, string | null>;
+  onApplyDrawing?: (part: string, textureData: string) => void;
+  onPartClick?: (part: string) => void;
+  meshRef?: React.RefObject<THREE.Object3D | null>;
 }) {
   // Destructure props
   const { 
@@ -50,7 +55,11 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
     setClickedPart = () => {},
     setCustomizerOpen = () => {},
     setSelectedPartForColor = () => {},
-    partColors = {}
+    partColors = {},
+    partTextures = {},
+    onApplyDrawing = () => {},
+    onPartClick = () => {},
+    meshRef
   } = props;
   
   // XR session state to toggle VR-specific behavior
@@ -121,12 +130,16 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
       buckles: '#d3d3d3',
       straps: '#f8bbd9',
       clasps: '#d3d3d3'
-    }
+    },
+    partTextures: {}
   });
 
   // Smart customizer state
   // Color picker state is now passed as props from parent
   const [hoveredPart, setHoveredPart] = useState<SneakerPart | null>(null);
+  
+  // Drawing mode state
+  const [drawingMode, setDrawingMode] = useState<'color' | 'draw'>('color');
   // clickedPart is now passed as prop from parent
   
   // Refs for the sneaker
@@ -220,8 +233,13 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
     console.log('📋 All mesh names:', meshNames);
     console.log('🎯 Available parts for hover:', meshNames.filter(name => name && name.trim() !== ''));
     
-    // Store reference for material updates
-    sneakerSceneRef.current = clonedScene;
+  // Store reference for material updates
+  sneakerSceneRef.current = clonedScene;
+  
+  // Set mesh ref for direct drawing
+  if (meshRef) {
+    meshRef.current = clonedScene;
+  }
   }, [clonedScene]);
 
   // Update materials when hover/click state changes - SIMPLE VERSION
@@ -270,6 +288,19 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
         mat.color.set(base);
       }
 
+      // Apply texture if available
+      const textureData = partTextures[partName as SneakerPart];
+      if (textureData) {
+        const texture = new THREE.TextureLoader().load(textureData);
+        texture.flipY = false; // Important for canvas textures
+        mat.map = texture;
+        mat.needsUpdate = true;
+      } else if (mat.map) {
+        // Remove texture if no texture data
+        mat.map = null;
+        mat.needsUpdate = true;
+      }
+
       // Hover/click accents - use bright pink for better visibility on light colors
       if (isHovered) {
         mat.emissive?.set('#ff69b4');
@@ -314,19 +345,19 @@ export function FastSneakerCustomizer(props: React.ComponentProps<'group'> & {
     const partName = e.object.userData?.partName || e.object.name;
     
     if (partName && partName.trim() !== '') {
-      if (clickedPart === partName) {
-        setClickedPart(null);
-        setSelectedPartForColor(null);
-        setCustomizerOpen(false);
-        setHoveredPart(null);
-      } else {
-        setClickedPart(partName);
-        setSelectedPartForColor(partName);
-        setCustomizerOpen(true);
-        setHoveredPart(null);
-      }
+      // Use the parent's click handler for mode-aware behavior
+      onPartClick(partName);
     }
-  }, [clickedPart, setClickedPart, setCustomizerOpen, setSelectedPartForColor]);
+  }, [onPartClick]);
+
+  // Handle drawing application
+  const handleApplyDrawing = useCallback((part: string, textureData: string) => {
+    setOptions(prev => ({
+      ...prev,
+      partTextures: { ...prev.partTextures, [part]: textureData }
+    }));
+    onApplyDrawing(part, textureData);
+  }, [onApplyDrawing]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlePointerDown = useCallback((e: any) => {
