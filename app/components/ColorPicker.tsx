@@ -98,7 +98,7 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
       const hexColor = hslToHex(hue, saturation, lightness);
       onColorChange(hexColor);
     }
-  }, [hue, saturation, lightness, onColorChange, isDragging]);
+  }, [hue, saturation, lightness, isDragging]); // Removed onColorChange from dependencies
 
   const updateHueFromMouse = useCallback((e: React.MouseEvent | MouseEvent) => {
     if (!colorWheelRef.current) return;
@@ -130,7 +130,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
   // Handle mouse events for color wheel
   const handleColorWheelMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
     setDragType('hue');
@@ -138,7 +137,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
   }, [updateHueFromMouse]);
 
   const handleSLPickerMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
     setDragType('sl');
@@ -183,9 +181,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
 
   return (
     <div
-      onMouseDown={(e) => e.stopPropagation()}
-      onMouseMove={(e) => e.stopPropagation()}
-      onMouseUp={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
@@ -232,8 +227,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
         <div
           ref={colorWheelRef}
           onMouseDown={handleColorWheelMouseDown}
-          onMouseMove={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           style={{
             width: 140,
@@ -279,8 +272,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
         <div
           ref={slPickerRef}
           onMouseDown={handleSLPickerMouseDown}
-          onMouseMove={(e) => e.stopPropagation()}
-          onMouseUp={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           style={{
             width: 140,
@@ -396,8 +387,6 @@ export function ColorPicker({ isOpen, selectedPart, onColorChange, onApplyColor,
           const hexColor = hslToHex(hue, saturation, lightness);
           onApplyColor(hexColor);
         }}
-        onMouseDown={(e) => e.stopPropagation()}
-        onMouseUp={(e) => e.stopPropagation()}
         style={{
           width: '100%',
           padding: '8px 12px',
